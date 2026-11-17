@@ -27,112 +27,96 @@ let vehicles=[
     }
 ];
 
-function validateVehicle(vehicle){
-    const required=[
-        "id",
-        "vehicleName",
-        "vehicleNumber",
-        "type",
-        "price"
-    ];
-
-    const missing= required.filter(
-        key=>vehicle[key]===undefined || vehicle[key]===null || vehicle[key]===""
+function isValidVehicle(vehicle) {
+    return (
+        vehicle.id !== undefined &&
+        vehicle.vehicleName &&
+        vehicle.vehicleNumber &&
+        vehicle.type &&
+        Number.isFinite(vehicle.price) &&
+        vehicle.price > 0
     );
-
-    if(missing.length>0){
-        return "Required fields are missing";
-    }
-    if(typeof vehicle.price!== "number" || vehicle.price<=0){
-        return "Price must be positive";
-    }
-    return null;
 }
 
-app.get("/vehicles", (req, res) =>{
+app.get('/vehicles', (req, res) => {
     res.status(200).json(vehicles);
 });
 
-app.get("/vehicles/:id", (req, res) =>{
+
+app.get('/vehicles/:id', (req, res) => {
     const id = Number(req.params.id);
-    const vehicle = vehicles.find(v => v.id===id);
-
-    if(!vehicle){
+    const vehicle = vehicles.find(v => v.id === id);
+    if (!vehicle) {
         return res.status(404).json({
-            message: "Vehicle not found"
+            message: 'Vehicle not found'
         });
     }
-
     res.status(200).json(vehicle);
+
 });
 
-app.post("/vehicles", (req, res)=>{
-    const newVehicle= req.body;
-    const error= validateVehicle(newVehicle);
-    if(error){
+app.post('/vehicles', (req, res) => {
+    const vehicle = req.body;
+    if (!isValidVehicle(vehicle)) {
         return res.status(400).json({
-            message: error
+            message: 'Invalid or missing vehicle fields'
         });
     }
-
-    const id = Number(newVehicle.id);
-    if(vehicles.some(v => v.id===id)){
+    if (vehicles.some(v => v.id === vehicle.id)) {
         return res.status(400).json({
-            message: "Vehicle ID already exists"
+            message: 'Vehicle ID already exists'
         });
     }
-    newVehicle.id= id;
-    vehicles.push(newVehicle);
+    vehicles.push(vehicle);
     res.status(201).json({
-        message: "Vehicle added successfully",
-        vehicle: newVehicle
+        message: 'Vehicle added successfully',
+        vehicle: vehicle
     });
 });
 
-app.put("/vehicles/:id", (req, res)=>{
-    const id= Number(req.params.id);
-    const index= vehicles.findIndex(v => v.id===id);
-    if(index=== -1){
-        return res.status(404).json({
-            message: "Vehicle not found"
-        });
-    }
-
-    const updatedVehicle= {...vehicles[index],...req.body,id: id};
-    const error = validateVehicle(updatedVehicle);
-    if(error){
-        return res.status(400).json({
-            message: error
-        });
-    }
-
-    vehicles[index]= updatedVehicle;
-    res.status(200).json({
-        message: "Vehicle updated successfully",
-        vehicle: updatedVehicle
-    });
-});
-
-app.delete("/vehicles/:id", (req, res) => {
+app.put('/vehicles/:id', (req, res) => {
     const id = Number(req.params.id);
     const index = vehicles.findIndex(v => v.id === id);
     if (index === -1) {
         return res.status(404).json({
-            message: "Vehicle not found"
+            message: 'Vehicle not found'
         });
     }
-
-    const deletedVehicle = vehicles.splice(index, 1)[0];
+    const updatedVehicle = {
+        ...req.body,
+        id: id
+    };
+    if (!isValidVehicle(updatedVehicle)) {
+        return res.status(400).json({
+            message: 'Invalid or missing vehicle fields'
+        });
+    }
+    vehicles[index] = updatedVehicle;
     res.status(200).json({
-        message: "Vehicle deleted successfully",
-        vehicle: deletedVehicle
+        message: 'Vehicle updated successfully',
+        vehicle: updatedVehicle
+    });
+});
+
+app.delete('/vehicles/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const index = vehicles.findIndex(v => v.id === id);
+    if (index === -1) {
+        return res.status(404).json({
+            message: 'Vehicle not found'
+        });
+    }
+    const deletedVehicle = vehicles.splice(index, 1);
+    res.status(200).json({
+        message: 'Vehicle deleted successfully',
+        vehicle: deletedVehicle[0]
     });
 });
 
 app.use((err, req, res, next) => {
-    if (err instanceof SyntaxError && err.status === 400) {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
         return res.status(400).json({
-            message: "Invalid JSON"
+            message: 'Invalid JSON'
         });
     }
     next(err);
@@ -140,10 +124,9 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => {
     res.status(404).json({
-        message: "Route not found"
+        message: 'Route not found'
     });
 });
-
-app.listen(PORT, () => {
-    console.log(`Express Server running at http://localhost:${PORT}`);
+app.listen(4000, () => {
+    console.log('Express Server running at http://localhost:4000');
 });
