@@ -1,8 +1,6 @@
-import http from 'http'
-import fs from 'fs'
-const path = require("path");
 
-const PORT = 3000;
+import http from 'http';
+import fs from 'fs';
 
 let vehicles = [
     {
@@ -22,105 +20,132 @@ let vehicles = [
     {
         id: 3,
         vehicleName: "Honda City",
-        vehicleNumber: "UP16CD4567",
+        vehicleNumber: "DL10CD1234",
         type: "Sedan",
         price: 1200000
     }
 ];
 
 const server = http.createServer((req, res) => {
-    if (req.url === "/" && req.method === "GET") {
+
+    // Welcome Route
+    if (req.url === '/' && req.method === 'GET') {
         res.writeHead(200, {
-            "Content-Type": "text/html"
+            'Content-Type': 'text/html'
         });
-        res.end(`
-            <h1>Welcome to Vehicle Management System</h1>
-            <p>Manage your vehicle records easily.</p>
-        `);
+
+        res.end('<h1>Welcome to Vehicle Management System</h1>');
     }
-    else if (req.url === "/vehicles" && req.method === "GET") {
+
+    // Get All Vehicles
+    else if (req.url === '/vehicles' && req.method === 'GET') {
         res.writeHead(200, {
-            "Content-Type": "application/json"
+            'Content-Type': 'application/json'
         });
+
         res.end(JSON.stringify(vehicles));
     }
-    else if (req.url === "/about" && req.method === "GET") {
+
+    // About Route
+    else if (req.url === '/about' && req.method === 'GET') {
         res.writeHead(200, {
-            "Content-Type": "text/html"
+            'Content-Type': 'text/html'
         });
-        res.end("<h1>About Vehicle Management System</h1>");
+
+        res.end('<h1>Vehicle Management Application</h1><p>Built using Node.js</p>');
     }
 
-    else if (req.url === "/info" && req.method === "GET") {
-        fs.readFile(
-            path.join(__dirname, "public", "info.html"),
-            "utf8",
-            (err, data) => {
-                if (err) {
-                    res.writeHead(500);
-                    return res.end("Error reading file");
-                }
-                res.writeHead(200, {
-                    "Content-Type": "text/html"
+    // Static File using FS Module
+    else if (req.url === '/info' && req.method === 'GET') {
+
+        fs.readFile('./public/info.html', 'utf8', (err, data) => {
+
+            if (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain'
                 });
+
+                res.end('Error reading file');
+            }
+            else {
+                res.writeHead(200, {
+                    'Content-Type': 'text/html'
+                });
+
                 res.end(data);
             }
-        );
+        });
     }
 
-    else if (req.url === "/add-vehicle" && req.method === "POST") {
-        let body = "";
-        req.on("data", chunk => {
-            body += chunk;
+    // Add Vehicle
+    else if (req.url === '/add-vehicle' && req.method === 'POST') {
+
+        let body = '';
+
+        req.on('data', chunk => {
+            body += chunk.toString();
         });
-        req.on("end", () => {
+
+        req.on('end', () => {
+
             try {
                 const vehicle = JSON.parse(body);
-                const required = [
-                    "id",
-                    "vehicleName",
-                    "vehicleNumber",
-                    "type",
-                    "price"
-                ];
-                const missing = required.filter(
-                    key => vehicle[key] === undefined || vehicle[key] === null || vehicle[key] === ""
-                );
-                if (missing.length > 0) {
-                    res.writeHead(400);
-                    return res.end("Missing required fields");
+
+                const { id, vehicleName, vehicleNumber, type, price } = vehicle;
+
+                if (
+                    id === undefined ||
+                    !vehicleName ||
+                    !vehicleNumber ||
+                    !type ||
+                    price === undefined ||
+                    !Number.isFinite(price) ||
+                    price <= 0
+                ) {
+                    res.writeHead(400, {
+                        'Content-Type': 'application/json'
+                    });
+
+                    return res.end(JSON.stringify({
+                        message: 'Missing or invalid required fields'
+                    }));
                 }
-                if (typeof vehicle.price !== "number" ||
-                    vehicle.price <= 0) {
-                    res.writeHead(400);
-                    return res.end("Price must be positive");
-                }
-                if (vehicles.some(v => v.id === Number(vehicle.id))) {
-                    res.writeHead(400);
-                    return res.end("Vehicle ID already exists");
-                }
-                vehicle.id = Number(vehicle.id);
+
                 vehicles.push(vehicle);
+
                 res.writeHead(201, {
-                    "Content-Type": "application/json"
+                    'Content-Type': 'application/json'
                 });
+
                 res.end(JSON.stringify({
-                    message: "Vehicle added successfully",
+                    message: 'Vehicle added successfully',
                     vehicle: vehicle
                 }));
-            } catch (error) {
-                res.writeHead(400);
-                res.end("Invalid JSON");
+
+            }
+            catch (error) {
+                res.writeHead(400, {
+                    'Content-Type': 'application/json'
+                });
+
+                res.end(JSON.stringify({
+                    message: 'Invalid JSON'
+                }));
             }
         });
     }
-    else{
+
+    // Invalid Route
+    else {
         res.writeHead(404, {
-            "Content-Type": "text/plain"
+            'Content-Type': 'text/plain'
         });
-        res.end("404 Page Not Found");
+
+        res.end('404 Page Not Found');
     }
+
 });
-server.listen(PORT, () => {
-    console.log(`HTTP Server running at http://localhost:${PORT}`);
+
+server.listen(3000, () => {
+    console.log('HTTP Server running at http://localhost:3000');
 });
